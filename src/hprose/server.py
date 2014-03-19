@@ -14,7 +14,7 @@
 #                                                          #
 # hprose server for python 2.3+                            #
 #                                                          #
-# LastModified: Mar 12, 2014                               #
+# LastModified: Mar 19, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -50,8 +50,8 @@ class HproseService(object):
         self.onSendHeader = None
         self.onSendError = None
 
-    def _responseEnd(self, ostream):
-        data = self.filter.outputFilter(ostream.getvalue())
+    def _responseEnd(self, ostream, context):
+        data = self.filter.outputFilter(ostream.getvalue(), context)
         ostream.close()
         return data
 
@@ -121,7 +121,7 @@ class HproseService(object):
         ostream.write(HproseTags.TagError)
         writer.writeString(str(e).encode('utf-8'))
         ostream.write(HproseTags.TagEnd)
-        return self._responseEnd(ostream)
+        return self._responseEnd(ostream, context)
 
     def _doInvoke(self, istream, context):
         simpleReader = HproseReader(istream, True)
@@ -178,20 +178,20 @@ class HproseService(object):
                         writer.reset()
                         writer.writeList(args)
         ostream.write(HproseTags.TagEnd)
-        return self._responseEnd(ostream)
+        return self._responseEnd(ostream, context)
 
-    def _doFunctionList(self):
+    def _doFunctionList(self, context):
         ostream = StringIO()
         writer = HproseWriter(ostream, True)
         ostream.write(HproseTags.TagFunctions)
         writer.writeList(self.__funcNames.values())
         ostream.write(HproseTags.TagEnd)
-        return self._responseEnd(ostream)
+        return self._responseEnd(ostream, context)
 
     def _handle(self, data, context):
         istream = None
         try:
-            data = self.filter.inputFilter(data)
+            data = self.filter.inputFilter(data, context)
             if data == None or data == '' or data[len(data) - 1] != HproseTags.TagEnd:
                 raise HproseException, "Wrong Request: \r\n%s" % data
             istream = StringIO(data)
@@ -199,7 +199,7 @@ class HproseService(object):
             if tag == HproseTags.TagCall:
                 return self._doInvoke(istream, context)
             elif tag == HproseTags.TagEnd:
-                return self._doFunctionList()
+                return self._doFunctionList(context)
             else:
                 raise HproseException, "Wrong Request: \r\n%s" % data
         except (KeyboardInterrupt, SystemExit):

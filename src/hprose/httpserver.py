@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Mar 12, 2014                               #
+# LastModified: Mar 19, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -106,7 +106,7 @@ class HproseHttpService(HproseService):
         body = ''
         try:
             if ((environ['REQUEST_METHOD'] == 'GET') and self.get):
-                body = self._doFunctionList()
+                body = self._doFunctionList(environ)
             elif (environ['REQUEST_METHOD'] == 'POST'):
                 data = environ['wsgi.input'].read(int(environ.get("CONTENT_LENGTH", 0)))
                 body = self._handle(data, environ)

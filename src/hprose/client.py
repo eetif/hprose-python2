@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for python 2.3+                            #
 #                                                          #
-# LastModified: Mar 11, 2014                               #
+# LastModified: Mar 19, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -122,12 +122,12 @@ class HproseClient(object):
             writer.writeList(args)
             if byref: writer.writeBoolean(True)
         stream.write(HproseTags.TagEnd)
-        data = self.filter.outputFilter(stream.getvalue())
+        data = self.filter.outputFilter(stream.getvalue(), self)
         stream.close()
         return data
 
     def __doInput(self, data, args, resultMode):
-        data = self.filter.inputFilter(data)
+        data = self.filter.inputFilter(data, self)
         if data == None or len(data) == 0 or data[len(data) - 1] != HproseTags.TagEnd:
             raise HproseException, "Wrong Response: \r\n%s" % data
         if resultMode == HproseResultMode.RawWithEndTag:
