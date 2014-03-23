@@ -14,7 +14,7 @@
 #                                                          #
 # hprose server for python 2.3+                            #
 #                                                          #
-# LastModified: Mar 19, 2014                               #
+# LastModified: Mar 23, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -42,16 +42,44 @@ class HproseService(object):
         self.__funcNames = {}
         self.__resultMode = {}
         self.__simpleMode = {}
+        self.__filters = []
         self.debug = False
-        self.filter = HproseFilter()
         self.simple = False
         self.onBeforeInvoke = None
         self.onAfterInvoke = None
         self.onSendHeader = None
         self.onSendError = None
 
+    def getFilter(self):
+        if (len(self.__filters) == 0):
+            return None
+        return self.__filters[0]
+
+    def setFilter(self, filter):
+        self.__filters = []
+        if filter != None:
+            self.__filters.append(filter)
+
+    filter = property(fget = getFilter, fset = setFilter)
+
+    def addFilter(self, filter):
+        self.__filters.append(filter)
+
+    def removeFilter(self, filter):
+        self.__filters.remove(filter)
+
+    def __inputFilter(self, data, context):
+        for filter in reversed(self.__filters):
+            data = filter.inputFilter(data, context)
+        return data
+
+    def __outputFilter(self, data, context):
+        for filter in self.__filters:
+            data = filter.outputFilter(data, context)
+        return data
+
     def _responseEnd(self, ostream, context):
-        data = self.filter.outputFilter(ostream.getvalue(), context)
+        data = self.__outputFilter(ostream.getvalue(), context)
         ostream.close()
         return data
 
@@ -162,7 +190,7 @@ class HproseService(object):
             self._fireAfterInvokeEvent(name, args, byref, result, context)
             ostream = StringIO()
             if resultMode == HproseResultMode.RawWithEndTag:
-                return self.filter.outputFilter(result)
+                return self.__outputFilter(result, context)
             if resultMode == HproseResultMode.Raw:
                 ostream.write(result)
             else:
@@ -191,7 +219,7 @@ class HproseService(object):
     def _handle(self, data, context):
         istream = None
         try:
-            data = self.filter.inputFilter(data, context)
+            data = self.__inputFilter(data, context)
             if data == None or data == '' or data[len(data) - 1] != HproseTags.TagEnd:
                 raise HproseException, "Wrong Request: \r\n%s" % data
             istream = StringIO(data)

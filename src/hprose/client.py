@@ -14,7 +14,7 @@
 #                                                          #
 # hprose client for python 2.3+                            #
 #                                                          #
-# LastModified: Mar 19, 2014                               #
+# LastModified: Mar 23, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -72,8 +72,8 @@ class _AsyncInvoke(object):
 
 class HproseClient(object):
     def __init__(self, uri = None):
+        self.__filters = []
         self.onError = None
-        self.filter = HproseFilter()
         self.simple = False
         self.useService(uri)
 
@@ -109,6 +109,24 @@ class HproseClient(object):
 
     uri = property(fset = setUri)
 
+    def getFilter(self):
+        if (len(self.__filters) == 0):
+            return None
+        return self.__filters[0]
+
+    def setFilter(self, filter):
+        self.__filters = []
+        if filter != None:
+            self.__filters.append(filter)
+
+    filter = property(fget = getFilter, fset = setFilter)
+
+    def addFilter(self, filter):
+        self.__filters.append(filter)
+
+    def removeFilter(self, filter):
+        self.__filters.remove(filter)
+
     def _sendAndReceive(self, data):
         raise NotImplementedError
 
@@ -122,12 +140,15 @@ class HproseClient(object):
             writer.writeList(args)
             if byref: writer.writeBoolean(True)
         stream.write(HproseTags.TagEnd)
-        data = self.filter.outputFilter(stream.getvalue(), self)
+        data = stream.getvalue()
         stream.close()
+        for filter in self.__filters:
+            data = filter.outputFilter(data, self)
         return data
 
     def __doInput(self, data, args, resultMode):
-        data = self.filter.inputFilter(data, self)
+        for filter in reversed(self.__filters):
+            data = filter.inputFilter(data, self)
         if data == None or len(data) == 0 or data[len(data) - 1] != HproseTags.TagEnd:
             raise HproseException, "Wrong Response: \r\n%s" % data
         if resultMode == HproseResultMode.RawWithEndTag:
