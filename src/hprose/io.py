@@ -14,7 +14,7 @@
 #                                                          #
 # hprose io for python 2.3+                                #
 #                                                          #
-# LastModified: Mar 16, 2014                               #
+# LastModified: Apr 12, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -162,7 +162,7 @@ def _readuntil(stream, char):
 def _readint(stream, char):
     s = _readuntil(stream, char)
     if s == '': return 0
-    return int(s)
+    return int(s, 10)
 
 class HproseRawReader(object):
     def __init__(self, stream):
@@ -247,7 +247,7 @@ class HproseRawReader(object):
         if l == '':
             l = 0
         else:
-            l = int(l)
+            l = int(l, 10)
         ostream.write(self.stream.read(l + 1))
     def __readStringRaw(self, ostream):
         l = _readuntil(self.stream, HproseTags.TagQuote)
@@ -256,7 +256,7 @@ class HproseRawReader(object):
         if l == '':
             l = 0
         else:
-            l = int(l)
+            l = int(l, 10)
         s = []
         i = 0
         while i < l:
@@ -310,7 +310,7 @@ class HproseReader(HproseRawReader):
     def unserialize(self):
         tag = self.stream.read(1)
         if '0' <= tag <= '9':
-            return int(tag);
+            return int(tag, 10);
         if tag == HproseTags.TagInteger:
             return self.__readIntegerWithoutTag()
         if tag == HproseTags.TagLong:
@@ -365,11 +365,11 @@ class HproseReader(HproseRawReader):
             self.unexpectedTag(tag, ''.join(expectTags))
         return tag
     def __readIntegerWithoutTag(self):
-        return int(_readuntil(self.stream, HproseTags.TagSemicolon))
+        return int(_readuntil(self.stream, HproseTags.TagSemicolon), 10)
     def readInteger(self):
         tag = self.stream.read(1)
         if '0' <= tag <= '9':
-            return int(tag)
+            return int(tag, 10)
         if tag == HproseTags.TagInteger:
             return self.__readIntegerWithoutTag()
         self.unexpectedTag(tag)
@@ -407,14 +407,14 @@ class HproseReader(HproseRawReader):
         tag = self.checkTags((HproseTags.TagTrue, HproseTags.TagFalse))
         return tag == HproseTags.TagTrue
     def readDateWithoutTag(self):
-        year = int(self.stream.read(4))
-        month = int(self.stream.read(2))
-        day = int(self.stream.read(2))
+        year = int(self.stream.read(4), 10)
+        month = int(self.stream.read(2), 10)
+        day = int(self.stream.read(2), 10)
         tag = self.stream.read(1)
         if tag == HproseTags.TagTime:
-            hour = int(self.stream.read(2))
-            minute = int(self.stream.read(2))
-            second = int(self.stream.read(2))
+            hour = int(self.stream.read(2), 10)
+            minute = int(self.stream.read(2), 10)
+            second = int(self.stream.read(2), 10)
             (tag, microsecond) = self.__readMicrosecond()
             if tag == HproseTags.TagUTC:
                 d = datetime.datetime(year, month, day, hour, minute, second, microsecond, utc)
@@ -433,9 +433,9 @@ class HproseReader(HproseRawReader):
         if tag == HproseTags.TagDate: return self.readDateWithoutTag()
         self.unexpectedTag(tag)
     def readTimeWithoutTag(self):
-        hour = int(self.stream.read(2))
-        minute = int(self.stream.read(2))
-        second = int(self.stream.read(2))
+        hour = int(self.stream.read(2), 10)
+        minute = int(self.stream.read(2), 10)
+        second = int(self.stream.read(2), 10)
         (tag, microsecond) = self.__readMicrosecond()
         if tag == HproseTags.TagUTC:
             t = datetime.time(hour, minute, second, microsecond, utc)
@@ -577,10 +577,10 @@ class HproseReader(HproseRawReader):
         microsecond = 0
         tag = self.stream.read(1)
         if tag == HproseTags.TagPoint:
-            microsecond = int(self.stream.read(3)) * 1000
+            microsecond = int(self.stream.read(3), 10) * 1000
             tag = self.stream.read(1)
             if '0' <= tag <= '9':
-                microsecond = microsecond + int(tag + self.stream.read(2))
+                microsecond = microsecond + int(tag + self.stream.read(2), 10)
                 tag = self.stream.read(1)
                 if '0' <= tag <= '9':
                     self.stream.read(2)
