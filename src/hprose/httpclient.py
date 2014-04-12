@@ -241,7 +241,7 @@ class HproseHttpClient(HproseClient):
         self.__header = {}
         self.__proxy = None
         self.timeout = 30
-        self.keepAlive = False
+        self.keepAlive = True
         self.keepAliveTimeout = 300
 
     def setUri(self, uri):
