@@ -604,13 +604,17 @@ class RealWriterRefer:
         self.ref = {}
         self.refcount = 0
     def set(self, val):
-        self.ref[id(val)] = self.refcount
+        if isinstance(val, str) or isinstance(val, unicode):
+            self.ref[val] = self.refcount
+        else:
+            self.ref[id(val)] = self.refcount
         self.refcount += 1
     def write(self, val):
-        valid = id(val)
-        if (valid in self.ref):
+        if not (isinstance(val, str) or isinstance(val, unicode)):
+            val = id(val)
+        if (val in self.ref):
             self.stream.write('%c%d%c' % (HproseTags.TagRef,
-                                          self.ref[valid],
+                                          self.ref[val],
                                           HproseTags.TagSemicolon))
             return True
         return False
