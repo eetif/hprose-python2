@@ -14,7 +14,7 @@
 #                                                          #
 # hprose httpserver for python 2.3+                        #
 #                                                          #
-# LastModified: Mar 19, 2014                               #
+# LastModified: Apr 18, 2014                               #
 # Author: Ma Bingyao <andot@hprose.com>                    #
 #                                                          #
 ############################################################
@@ -34,6 +34,7 @@ class HproseHttpService(HproseService):
         self.crossDomain = False
         self.p3p = False
         self.get = True
+        self._origins = {}
         self._crossDomainXmlFile = None
         self._crossDomainXmlContent = None
         self._clientAccessPolicyXmlFile = None
@@ -49,6 +50,12 @@ class HproseHttpService(HproseService):
         # WSGI 1
         start_response(result[0], result[1])
         return result[2]
+
+    def addAccessControlAllowOrigin(self, origin):
+        self._origins[origin] = True
+
+    def removeAccessControlAllowOrigin(self, origin):
+        del self._origins[origin]
 
     def _crossDomainXmlHandler(self, environ):
         path = (environ['SCRIPT_NAME'] + environ['PATH_INFO']).lower()
@@ -86,8 +93,9 @@ class HproseHttpService(HproseService):
         if self.crossDomain:
             origin = environ.get("HTTP_ORIGIN", "null")
             if origin != "null":
-                header.append(("Access-Control-Allow-Origin", origin))
-                header.append(("Access-Control-Allow-Credentials", "true"))
+                if (len(self._origins) == 0) or self._origins[origin]:
+                    header.append(("Access-Control-Allow-Origin", origin))
+                    header.append(("Access-Control-Allow-Credentials", "true"))
             else:
                 header.append(("Access-Control-Allow-Origin", "*"))
         if self.onSendHeader != None:
